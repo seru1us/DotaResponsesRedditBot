@@ -211,7 +211,7 @@ def short_hero_name_from_url(url):
 
 
 def ellipsis_to_three_dots(dictionary):
-    """Method that replaces all ellipsis (…) with three dots (...) in the dictionary ketys."""
+    """Method that replaces all ellipsis (…) with three dots (...) in the dictionary keys."""
     newdict = {}
 
     for key in dictionary:
@@ -223,5 +223,5 @@ def ellipsis_to_three_dots(dictionary):
     return newdict
 
 
-# generate_dictionaries(properties.RESPONSES_FILENAME, properties.HEROES_FILENAME, properties.SHITTY_WIZARD_FILENAME)
-# dictionary = dictionary_from_file(properties.RESPONSES_FILENAME)
+#generate_dictionaries(properties.RESPONSES_FILENAME, properties.HEROES_FILENAME, properties.SHITTY_WIZARD_FILENAME)
+#dictionary = dictionary_from_file(properties.RESPONSES_FILENAME)
