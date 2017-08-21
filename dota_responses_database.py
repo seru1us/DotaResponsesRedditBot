@@ -27,7 +27,8 @@ def create_responses_database():
 
     c.execute('CREATE TABLE IF NOT EXISTS responses (response text, link text, hero text, hero_id integer)')
     for key, value in responses_dictionary.items():
-        c.execute("INSERT INTO responses(response, text) VALUES (?, ?)", (key, value))
+        #print(key, value)
+        c.execute("INSERT INTO responses(response, link) VALUES (?, ?)", (key, value))
 
     conn.commit()
     c.close()
@@ -168,6 +169,6 @@ if __name__ == '__main__':
     #add_hero_specific_responses()
     #create_heroes_database()
     #add_hero_ids_to_general_responses()
-    add_hero_specific_responses(["Underlord/Responses"])
+    #add_hero_specific_responses(["Underlord/Responses"])
     #delete_old_comment_ids()
     
