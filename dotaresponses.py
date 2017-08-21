@@ -98,16 +98,25 @@ def execute():
     reddit_account = account.get_account()
 
     try:
-        sticky = reddit_account.get_subreddit(properties.SUBREDDIT).get_sticky()
-    except praw.errors.NotFound:
+        sticky = reddit_account.subreddit(properties.SUBREDDIT).sticky()
+    #except praw.errors.NotFound:
+    except prawcore.exceptions.NotFound:
         sticky = None
 
     log('START')
 
-    for submission in reddit_account.get_subreddit(properties.SUBREDDIT).get_new(limit=150):
+    #prawbm get_new to new
+    #for submission in reddit_account.subreddit(properties.SUBREDDIT).get_new(limit=150):
+    #    add_comments_to_submission(submission, sticky)
+
+    #prawbm get_hot to hot
+    #for submission in reddit_account.subreddit(properties.SUBREDDIT).get_hot(limit=35):
+    #    add_comments_to_submission(submission, sticky)
+
+    for submission in reddit_account.subreddit(properties.SUBREDDIT).new(limit=150):
         add_comments_to_submission(submission, sticky)
 
-    for submission in reddit_account.get_subreddit(properties.SUBREDDIT).get_hot(limit=35):
+    for submission in reddit_account.subreddit(properties.SUBREDDIT).hot(limit=35):
         add_comments_to_submission(submission, sticky)
 
 
@@ -144,9 +153,14 @@ def add_comments(submission, heroes_dict):
     excluded responses list (loaded from properties) and if it is in the dictionary, a reply
     comment is prepared and posted.
     """
-    submission.replace_more_comments(limit=None, threshold=0)
+    # prawbm 
+    #print(dir(submission))
+    #submission.replace_more_comments(limit=None, threshold=0)
+    submission.comments.replace_more(limit=None, threshold=0)
 
-    for comment in praw.helpers.flatten_tree(submission.comments):
+    # prawbm
+    #for comment in praw.helpers.flatten_tree(submission.comments):
+    for comment in submission.comments.list():
         COMMENTS_DB_CURSOR.execute("SELECT id FROM comments WHERE id=?", [comment.id])
         if COMMENTS_DB_CURSOR.fetchone():
             continue
