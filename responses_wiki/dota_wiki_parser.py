@@ -8,6 +8,7 @@ import os
 import re
 import json
 from urllib.request import Request, urlopen
+from urllib import parse
 
 from bs4 import BeautifulSoup
 
@@ -15,11 +16,9 @@ import dota_responses_properties as properties
 
 __author__ = 'Jonarzz'
 
-
-URL_BEGINNING = 'http://dota2.gamepedia.com/'
-URL_API = ('api.php?action=query&list=categorymembers&cmlimit=max'
-           '&cmprop=title&format=json&cmtitle=Category:')
-CATEGORY = 'Lists of responses'
+URL_BEGINNING = 'https://gwent.gamepedia.com/'
+URL_API = ('api.php?action=query&list=categorymembers&cmlimit=max&cmprop=title&format=json&cmtitle=Category:')
+CATEGORY = 'Audio'
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -44,9 +43,7 @@ def dictionary_from_file(filename):
 def create_responses_text_and_link_dict(ending):
     """Method that for a given page ending creates a dictionary of pairs: response text-link."""
     responses_dict = {}
-    
     list_of_responses = create_list_of_responses(ending)
-    
     for element in list_of_responses:
         key = response_text_from_element(element)
         if " " not in key:
@@ -59,7 +56,7 @@ def create_responses_text_and_link_dict(ending):
     
     return responses_dict
                 
-def dictionary_of_responses(pages_endings):
+def dictionary_of_responses(category):
     """Method that creates dictionaries - with the responses (response text - link to the file),
     with hero names (short hero name used in Wiki files - long hero names),
     with "shitty wizard" responses (hero name - link to the file).
@@ -71,61 +68,43 @@ def dictionary_of_responses(pages_endings):
     heroes = {}
     shitty_wizard = {}
 
-    for ending in pages_endings:
-        print(ending)
+    for ending in category:
         list_of_responses = create_list_of_responses(ending)
-
         for element in list_of_responses:
+            testelement = element
             key = response_text_from_element(element)
             if " " not in key:
                 continue
             value = value_from_element(element)
-
-            short_hero = short_hero_name_from_url(value)
-            hero = ending.replace('_', ' ')
-            hero = hero.replace(' Pack', '')
-            hero = hero.replace(' responses', '')
-
+            short_hero = short_hero_name_from_url(element)
+            hero = short_hero
             if short_hero not in heroes:
                 heroes[short_hero] = hero
-
             if key == "shitty wizard":
                 if hero not in shitty_wizard:
                     shitty_wizard[hero] = value
             else:
                 if key not in responses:
                     responses[key] = value
-
-    responses['one of my favourites'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/b/b6/Invo_ability_invoke_01.mp3'
-    responses['lolicon'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/a/a9/Arcwar_lasthit_04.mp3'
-    responses['ho ho ha ha'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/1/17/Snip_ability_shrapnel_03.mp3'
-    
-    responses['caw'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/f/f6/Phoenix_bird_last_hit.mp3'
-    responses['skree'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/a/a5/Phoenix_bird_attack.mp3'
-    responses['beep boop'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/4/4f/Wisp_Move04.mp3'
-    responses['boop'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/5/5f/Wisp_Move02.mp3'
-    responses['beep'] = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/5/54/Wisp_Move01.mp3'
-    
-    heroes['Phoenix'] = 'Phoenix'
-    heroes['Wisp'] = 'Io'
-    
     return responses, heroes, shitty_wizard
-    
+
 
 def create_list_of_responses(ending):
+    page_to_parse(URL_BEGINNING + ending)
     page = page_to_parse(URL_BEGINNING + ending)
     soup = BeautifulSoup(page, "html.parser")
     list_of_responses = []
-
-    for element in soup.find_all("li"):
-        if "sm2_button" in str(element):
+    for element in soup.find_all("div", { "class" : "fullMedia" }):
+        if "internal" in str(element):
             list_of_responses.append(str(element))
-            
     return list_of_responses
-    
-    
+
+
 def page_to_parse(url):
     """Method used to open given url and return the received body (UTF-8 encoding)."""
+    scheme, netloc, path, query, fragment = parse.urlsplit(url)
+    path = parse.quote(path)
+    url = parse.urlunsplit((scheme, netloc, path, query, fragment))
     request = Request(url)
     request.add_header("User-Agent", "Mozilla/5.0")
     response = urlopen(request)
@@ -147,19 +126,26 @@ def pages_for_category(category_name):
 
     return output
 
-
 def response_text_from_element(element):
     """Method that returns a key for a given element taken from parsed html body."""
-    start_index = element.rfind("</a>") + 4
-    end_index = element.find("</li>") - 1
-    key = element[start_index:end_index]
-    key = clean_key(key)
+    title = re.findall(r'title="([^"]*)"', element)
+    title = ''.join(title)
+    title = title.split(' - ')
+    title.pop(0)
+    title = ''.join(title)
+    key = re.sub('\.mp3$', '', title)
+    key = key.lower()
+    key = key.replace("…", "...")
+    key = key.replace("!", "")
+    key = key.replace("–","")
+    #key = clean_key(key)
     return key
 
 
 def clean_key(key):
     """Method that cleans the given key, so that it is a lowercase string with
     no dots or exclamation marks ending the string. All html tags are removed as well."""
+    # This is currently unused. May be implemented in the future.
     if "<i>" in key:
         start_index = key.find("<i>")
         end_index = key.rfind("</i>") + 4
@@ -169,23 +155,17 @@ def clean_key(key):
         start_index = key.find("(")
         end_index = key.rfind(")") + 1
         key = key.replace(key[start_index:end_index], "")
-
     key = key.strip()
-
     try:
         if key[-1] in [".", "!"]:
             key = key[:-1]
     except IndexError:
         print("IndexError in: " + key)
-
     if key[-2:] == "--":
         key = key[:-2]
-
     key = key.replace("  ", " ")
-
     key = key.strip()
     key = key.lower()
-
     return key
 
 
@@ -201,13 +181,36 @@ def value_from_element(element):
 def short_hero_name_from_url(url):
     """Method that returns a short hero name for the given url
     (taken from the filename on the Wiki server)."""
-    search = re.search(r'\/(\w+?)_.+?\.mp3', url)
-    if search:
-        if search.group(1) == 'Dlc':
-            search = re.search(r'\/(Dlc_\w+?)_.+?\.mp3', url)
-            if search.group(1) == 'tech':
-                return 'Dlc_tech_ann'
-        return search.group(1)
+    heroname = ''.join(url)
+    if "<a" in url:
+        heroname = re.findall(r'title="([^"]*)"', url)
+        heroname = re.sub('\.mp3$', '', heroname)
+
+    if "File" in url:
+        heroname = heroname.replace("File:","")
+
+    if "._" in heroname[:4]:
+        heroname = heroname.split('._')
+        heroname = heroname[1]
+
+    if ". " in heroname[:4]:
+        heroname = heroname.split('. ')
+        heroname = heroname[1]
+
+    heroname = heroname.split('-')
+    heroname = heroname[0]
+    heroname = heroname.replace("_"," ")
+    heroname = heroname.strip()
+    print(heroname)
+    return heroname
+
+def short_hero_name_from_actual_url(actualurl):
+    """Method that returns a short hero name for the given url
+    (taken from the filename on the Wiki server)."""
+    actualurl = actualurl.split('/')
+    actualurl = actualurl[7]
+    actualurl = short_hero_name_from_url(actualurl)
+    return actualurl
 
 
 def ellipsis_to_three_dots(dictionary):
