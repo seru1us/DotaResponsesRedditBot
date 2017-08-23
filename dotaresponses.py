@@ -79,8 +79,6 @@ def add_regular_response(comment, heroes_dict, response):
             
 def prepare_specific_responses():
     output_dict = {}
-    for response in properties.INVOKER_BOT_RESPONSES:
-        output_dict[response] = add_invoker_response
     output_dict["shitty wizard"] = add_shitty_wizard_response
     output_dict["ho ho ha ha"] = add_sniper_response
     return output_dict    
@@ -99,19 +97,10 @@ def execute():
 
     try:
         sticky = reddit_account.subreddit(properties.SUBREDDIT).sticky()
-    #except praw.errors.NotFound:
     except prawcore.exceptions.NotFound:
         sticky = None
 
     log('START')
-
-    #prawbm get_new to new
-    #for submission in reddit_account.subreddit(properties.SUBREDDIT).get_new(limit=150):
-    #    add_comments_to_submission(submission, sticky)
-
-    #prawbm get_hot to hot
-    #for submission in reddit_account.subreddit(properties.SUBREDDIT).get_hot(limit=35):
-    #    add_comments_to_submission(submission, sticky)
 
     for submission in reddit_account.subreddit(properties.SUBREDDIT).new(limit=150):
         add_comments_to_submission(submission, sticky)
@@ -153,13 +142,7 @@ def add_comments(submission, heroes_dict):
     excluded responses list (loaded from properties) and if it is in the dictionary, a reply
     comment is prepared and posted.
     """
-    # prawbm 
-    #print(dir(submission))
-    #submission.replace_more_comments(limit=None, threshold=0)
     submission.comments.replace_more(limit=None, threshold=0)
-
-    # prawbm
-    #for comment in praw.helpers.flatten_tree(submission.comments):
     for comment in submission.comments.list():
         COMMENTS_DB_CURSOR.execute("SELECT id FROM comments WHERE id=?", [comment.id])
         if COMMENTS_DB_CURSOR.fetchone():
@@ -195,9 +178,8 @@ def create_reply(response_url, heroes_dict, orignal_text, img=None):
     The message consists of a link the the response, the response itself, a warning about the sound
     and an ending added from the properties file (post footer).
     """
-    short_hero_name = parser.short_hero_name_from_url(response_url)
+    short_hero_name = parser.short_hero_name_from_actual_url(response_url)
     hero_name = heroes_dict[short_hero_name]
-
     if img:
         return (
             "[]({}): [{}]({}) (sound warning: {}){}"
