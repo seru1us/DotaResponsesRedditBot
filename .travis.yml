@@ -12,5 +12,5 @@ install:
 - pip install beautifulsoup4
 # command to run tests
 script: 
-- python test_dotaresponses.py
-- python responses_wiki/test_dota_wiki_parser.py
+- python test_gwentresponses.py
+- python responses_wiki/test_gwent_wiki_parser.py
