@@ -14,23 +14,19 @@ RESPONSES_FILENAME = ''
 HEROES_FILENAME = ''
 SHITTY_WIZARD_FILENAME = ''
 
-COMMENT_ENDING = ''
+COMMENT_ENDING = """
+---
+*^^^I ^^^am ^^^a ^^^bot. ^^^Question/problem? ^^^Ask ^^^/u/will_work_for_twerk*
                     
-INFO_FILENAME = ''
-ERROR_FILENAME = ''
+
+*^^^Description/changelog: ^^^[GitHub](https://github.com/seru1us/DotaResponsesRedditBot) ^^^| [^^^Responses ^^^source](https://gwent.gamepedia.com/Category:Audio)*
+"""
+
+INFO_FILENAME = 'infolog.log'
+ERROR_FILENAME = 'errorlog.log'
+LOG_FILENAME = 'GRBlog.log'
 
 NUMBER_OF_DAYS_TO_DELETE_COMMENT = 7
-
-INVOKER_BOT_RESPONSES = ['one of my favourites', 'one of my favorites', 'r/dota2smut', '/r/dota2smut', 'dota2smut']
-INVOKER_RESPONSE = 'One of my favorites!'
-INVOKER_RESPONSE_URL = 'http://hydra-media.cursecdn.com/dota2.gamepedia.com/b/b6/Invo_ability_invoke_01.mp3'
-INVOKER_ENDING = 'Thus I invoke masturbation!'
-INVOKER_IMG_DIR = '/hero-invoker'
-INVOKER_HERO_NAME = 'Dirty Invoker'
-
-SNIPER_RESPONSE_URL = 'https://hydra-media.cursecdn.com/dota2.gamepedia.com/1/17/Snip_ability_shrapnel_03.mp3'
-SNIPER_IMG_DIR = '/hero-sniper'
-SNIPER_TRIGGER_WARNING = 'Trigger warning: Sniper'
 
 EXCLUDED_RESPONSES = ["thank you", "why not?", "glimmer cape", "hood of defiance",
                       "mask of madness", "force staff", "armlet of mordiggian",
