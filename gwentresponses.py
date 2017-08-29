@@ -1,9 +1,9 @@
 # coding=UTF-8
 
-"""Main module of the Dota 2 subreddit Heroes Responses Bot.
+"""Main module of the gwent 2 subreddit Heroes Responses Bot.
 
 The main body of the script is running in this file. The comments are loaded from the subreddit
-and the script checks if the comment is a response from Dota 2. If it is, a proper comment is
+and the script checks if the comment is a response from gwent 2. If it is, a proper comment is
 prepared. The comment is posted as a reply to the original post on Reddit.
 
 Proper logging is provided - saved to 2 files as standard output and errors.
@@ -12,14 +12,13 @@ Proper logging is provided - saved to 2 files as standard output and errors.
 import traceback
 import os
 from datetime import datetime, date
-import random
 import sqlite3
-
-import praw
-
-import dota_responses_account as account
-import dota_responses_properties as properties
-from responses_wiki import dota_wiki_parser as parser
+import logging
+from logging.handlers import TimedRotatingFileHandler
+import prawcore
+import gwent_responses_account as account
+import gwent_responses_properties as properties
+from responses_wiki import gwent_wiki_parser as parser
 
 __author__ = 'Jonarzz'
 
@@ -31,13 +30,17 @@ RESPONSES_DB_CURSOR = RESPONSES_DB_CONN.cursor()
 COMMENTS_DB_CONN = sqlite3.connect(os.path.join(SCRIPT_DIR, 'comments.db'), detect_types=sqlite3.PARSE_DECLTYPES)
 COMMENTS_DB_CURSOR = COMMENTS_DB_CONN.cursor()
 
+logger = logging.getLogger("Rotating Log")
+logger.setLevel(logging.INFO)
+handler = TimedRotatingFileHandler(properties.LOG_FILENAME,
+                                   when='M',
+                                   interval=5,
+                                   backupCount=5)
+logger.addHandler(handler)
 
-def add_invoker_response(comment, heroes_dict, response):
-    comment.reply(create_reply_invoker_ending(properties.INVOKER_RESPONSE_URL, heroes_dict, properties.INVOKER_IMG_DIR))
-    save_comment_id(comment.id, do_log=True)
-        
-    
-def add_flair_specific_response_and_return(comment, heroes_dict, response):
+
+def add_flair_specific_response(comment, heroes_dict, response):
+    """ Will probably never use this crap, but in case /r/Gwent ends up goin that route I'll leave it."""
     RESPONSES_DB_CURSOR.execute("SELECT id, img_dir FROM heroes WHERE css=?", [comment.author_flair_css_class])
     hero_id_img = RESPONSES_DB_CURSOR.fetchone()
     if hero_id_img:
@@ -47,23 +50,20 @@ def add_flair_specific_response_and_return(comment, heroes_dict, response):
             comment.reply(create_reply(link[0], heroes_dict, comment.body, hero_id_img[1]))
             save_comment_id(comment.id, do_log=True)
             return True
-            
-    
+
+
 def add_shitty_wizard_response(comment, heroes_dict, response):
+    """ Leftover function from the dota bot, but I honestly have no clue what it does."""
     RESPONSES_DB_CURSOR.execute("SELECT link, hero_id FROM responses WHERE response=? AND hero IS NOT NULL ORDER BY RANDOM() LIMIT 1;", [response])
     link_and_hero_id = RESPONSES_DB_CURSOR.fetchone()
     RESPONSES_DB_CURSOR.execute("SELECT img_dir FROM heroes WHERE id=?", [link_and_hero_id[1]])
     img_dir = RESPONSES_DB_CURSOR.fetchone()[0]
     comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body, img_dir))
     save_comment_id(comment.id, do_log=True)
-            
-            
-def add_sniper_response(comment, heroes_dict, response):
-    comment.reply(create_reply_sniper_ending(properties.SNIPER_RESPONSE_URL, heroes_dict, comment.body, properties.SNIPER_IMG_DIR))
-    save_comment_id(comment.id, do_log=True)
-    
-    
+
+
 def add_regular_response(comment, heroes_dict, response):
+    """ Function that adds responses before adding them to comments."""
     RESPONSES_DB_CURSOR.execute("SELECT link, hero_id FROM responses WHERE response=? AND hero IS NOT NULL ORDER BY hero_id DESC, RANDOM() LIMIT 1", [response])
     link_and_hero_id = RESPONSES_DB_CURSOR.fetchone()
     if link_and_hero_id:
@@ -76,13 +76,13 @@ def add_regular_response(comment, heroes_dict, response):
             comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body))
             log("Added: " + comment.id)
 
-            
+
 def prepare_specific_responses():
+    """ Not really used"""
     output_dict = {}
     output_dict["shitty wizard"] = add_shitty_wizard_response
-    output_dict["ho ho ha ha"] = add_sniper_response
-    return output_dict    
-    
+    return output_dict
+
 
 SPECIFIC_RESPONSES_DICT = prepare_specific_responses()
 
@@ -95,12 +95,13 @@ def execute():
     """
     reddit_account = account.get_account()
 
-    try:
-        sticky = reddit_account.subreddit(properties.SUBREDDIT).sticky()
-    except prawcore.exceptions.NotFound:
-        sticky = None
-
-    log('START')
+    #try:
+        #sticky = reddit_account.subreddit(properties.SUBREDDIT).sticky()
+    # Apparently this doesn't work, the prawcore
+    #except prawcore.exceptions.NotFound:
+    #    sticky = None
+    sticky = None
+    #log('START')
 
     for submission in reddit_account.subreddit(properties.SUBREDDIT).new(limit=150):
         add_comments_to_submission(submission, sticky)
@@ -125,12 +126,27 @@ def add_message_to_file(message, filename):
         file.write(str(datetime.now()) + '\n' + message + '\n')
 
 
-def log(message, error=False):
-    """Method used to save messages to an proper (info/error) log file."""
-    if error:
-        add_message_to_file(message, properties.ERROR_FILENAME)
-    else:
-        add_message_to_file(message, properties.INFO_FILENAME)
+#def log(message, error=False):
+def log(message):
+    """ new logger with log rotating."""
+    #logger = logging.getLogger("Rotating Log")
+    #logger.setLevel(logging.INFO)
+
+    #handler = TimedRotatingFileHandler(properties.LOG_FILENAME,
+                                       #when='M',
+                                       #interval=5,
+                                       #backupCount=5)
+    #logger.addHandler(handler)
+    logger.info(str(datetime.now()) + '\n' + message + '\n')
+    #handler.stream.close()
+
+
+#def log(message, error=False):
+    #"""Method used to save messages to an proper (info/error) log file."""
+    #if error:
+    #    add_message_to_file(message, properties.ERROR_FILENAME)
+    #else:
+    #    add_message_to_file(message, properties.INFO_FILENAME)
 
 
 def add_comments(submission, heroes_dict):
@@ -149,23 +165,23 @@ def add_comments(submission, heroes_dict):
             continue
 
         response = prepare_response(comment.body)
-        
         if response in properties.EXCLUDED_RESPONSES:
             save_comment_id(comment.id)
             continue
-        
-        if add_flair_specific_response_and_return(comment, heroes_dict, response):
+
+        if add_flair_specific_response(comment, heroes_dict, response):
             continue
-            
+
         if response in SPECIFIC_RESPONSES_DICT:
             SPECIFIC_RESPONSES_DICT[response](comment, heroes_dict, response)
             continue
-                
+
         add_regular_response(comment, heroes_dict, response)
         save_comment_id(comment.id)
-        
-        
+
+
 def save_comment_id(comment_id, do_log=False):
+    """ This function is pretty important, saves the comment ID so we don't spam"""
     if do_log:
         log("Added: " + comment_id)
     COMMENTS_DB_CURSOR.execute("INSERT INTO comments VALUES (?, ?)", (comment_id, date.today()))
@@ -185,24 +201,10 @@ def create_reply(response_url, heroes_dict, orignal_text, img=None):
             "[]({}): [{}]({}) (sound warning: {}){}"
             .format(img, orignal_text, response_url, hero_name, properties.COMMENT_ENDING)
             )
-    else:
-        return (
-            "[{}]({}) (sound warning: {}){}"
-            .format(orignal_text, response_url, hero_name, properties.COMMENT_ENDING)
-            )
-        
-        
-def create_reply_invoker_ending(response_url, heroes_dict, img_dir):   
+    #else:
     return (
-        "[]({}): [{}]({}) (sound warning: {})\n\n{}{}"
-        .format(img_dir, properties.INVOKER_RESPONSE, response_url, properties.INVOKER_HERO_NAME, properties.INVOKER_ENDING, properties.COMMENT_ENDING)
-        )
-
-
-def create_reply_sniper_ending(response_url, heroes_dict, orignal_text, img_dir):   
-    return (
-        "[]({}): [{}]({}) ({}){}"
-        .format(img_dir, orignal_text, response_url, properties.SNIPER_TRIGGER_WARNING, properties.COMMENT_ENDING)
+        "[{}]({}) (sound warning: {}){}"
+        .format(orignal_text, response_url, hero_name, properties.COMMENT_ENDING)
         )
 
 
@@ -214,14 +216,15 @@ def prepare_response(response):
     """
     response = response.strip(" .!").lower()
 
-    i = 1
+    #i = 1
     new_response = response
-    try:
-        while response[-1] == response[-1 - i]:
-            new_response = new_response[:-1]
-            i += 1
-    except IndexError:
-        log("IndexError", True)
+    # Temprarily removing this, is messing with a bunch of crap
+    #try:
+    #    while response[-1] == response[-1 - i]:
+    #        new_response = new_response[:-1]
+    #        i += 1
+    #except IndexError:
+    #    log("IndexError", True)
 
     return new_response
 
@@ -236,4 +239,3 @@ if __name__ == '__main__':
         except:
             COMMENTS_DB_CONN.commit()
             log(traceback.format_exc(), True)
-            
