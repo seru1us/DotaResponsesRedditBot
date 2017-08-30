@@ -25,7 +25,7 @@ def create_responses_database():
     conn = sqlite3.connect('responses.db')
     curse = conn.cursor()
 
-    curse.execute('CREATE TABLE IF NOT EXISTS responses (response text, link text, hero text, hero_id integer)')
+    curse.execute('CREATE TABLE IF NOT EXISTS responses (response text, link text, hero text, hero_id integer, stripped text)')
     # This was from the original Dota bot... but wasn't necessary for me at the moment. Leaving it commented because it was kinda important.
     #for key, value in responses_dictionary.items():
         #print(key, value)
@@ -89,7 +89,11 @@ def add_hero_specific_responses(endings=None):
         hero_name = parser.short_hero_name_from_url(ending)
         print(hero_name)
         for key, value in responses_dict.items():
-            cursor.execute("INSERT INTO responses(response, link, hero) VALUES (?, ?, ?)", (key, value, hero_name))
+            stripped = key.replace(r".", "")
+            stripped = stripped.replace(r",", "")
+            stripped = stripped.replace(r"'", "")
+            stripped = stripped.replace(r"’", "")
+            cursor.execute("INSERT INTO responses(response, link, hero, stripped) VALUES (?, ?, ?, ?)", (key, value, hero_name, stripped))
         database_connection.commit()
 
     cursor.close()
