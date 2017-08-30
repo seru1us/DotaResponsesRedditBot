@@ -33,8 +33,8 @@ COMMENTS_DB_CURSOR = COMMENTS_DB_CONN.cursor()
 logger = logging.getLogger("Rotating Log")
 logger.setLevel(logging.INFO)
 handler = TimedRotatingFileHandler(properties.LOG_FILENAME,
-                                   when='M',
-                                   interval=5,
+                                   when='H',
+                                   interval=12,
                                    backupCount=5)
 logger.addHandler(handler)
 
@@ -64,17 +64,20 @@ def add_shitty_wizard_response(comment, heroes_dict, response):
 
 def add_regular_response(comment, heroes_dict, response):
     """ Function that adds responses before adding them to comments."""
-    RESPONSES_DB_CURSOR.execute("SELECT link, hero_id FROM responses WHERE response=? AND hero IS NOT NULL ORDER BY hero_id DESC, RANDOM() LIMIT 1", [response])
+    #RESPONSES_DB_CURSOR.execute("SELECT link, hero_id FROM responses WHERE response=? AND hero IS NOT NULL ORDER BY hero_id DESC, RANDOM() LIMIT 1", [response])
+    RESPONSES_DB_CURSOR.execute("SELECT link, hero FROM responses WHERE stripped=? AND hero IS NOT NULL ORDER BY hero_id DESC, RANDOM() LIMIT 1", [response])
     link_and_hero_id = RESPONSES_DB_CURSOR.fetchone()
     if link_and_hero_id:
-        RESPONSES_DB_CURSOR.execute("SELECT img_dir FROM heroes WHERE id=?", [link_and_hero_id[1]])
-        img_dir = RESPONSES_DB_CURSOR.fetchone()
-        if img_dir:
-            comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body, img=img_dir[0]))
-            log("Added: " + comment.id)
-        else:
-            comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body))
-            log("Added: " + comment.id)
+        #RESPONSES_DB_CURSOR.execute("SELECT img_dir FROM heroes WHERE id=?", [link_and_hero_id[1]])
+        #img_dir = RESPONSES_DB_CURSOR.fetchone()
+        #if img_dir:
+        #    comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body, img=img_dir[0]))
+        #    log("Added: " + comment.id)
+        #else:
+        #    comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body))
+        #    log("Added: " + comment.id)
+        comment.reply(create_reply(link_and_hero_id[0], heroes_dict, comment.body))
+        log("Added: " + comment.id)
 
 
 def prepare_specific_responses():
@@ -164,13 +167,19 @@ def add_comments(submission, heroes_dict):
         if COMMENTS_DB_CURSOR.fetchone():
             continue
 
-        response = prepare_response(comment.body)
+        stripped_body = comment.body.replace(r".", "")
+        stripped_body = stripped_body.replace(r",", "")
+        stripped_body = stripped_body.replace(r"'", "")
+        stripped_body = stripped_body.replace(r"’", "")
+
+        #response = prepare_response(comment.body)
+        response = prepare_response(stripped_body)
         if response in properties.EXCLUDED_RESPONSES:
             save_comment_id(comment.id)
             continue
 
-        if add_flair_specific_response(comment, heroes_dict, response):
-            continue
+        #if add_flair_specific_response(comment, heroes_dict, response):
+            #continue
 
         if response in SPECIFIC_RESPONSES_DICT:
             SPECIFIC_RESPONSES_DICT[response](comment, heroes_dict, response)
@@ -238,4 +247,4 @@ if __name__ == '__main__':
             raise
         except:
             COMMENTS_DB_CONN.commit()
-            log(traceback.format_exc(), True)
+            log(traceback.format_exc())
