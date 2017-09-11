@@ -16,10 +16,7 @@ SHITTY_WIZARD_FILENAME = ''
 
 COMMENT_ENDING = """
 ---
-*^^^I ^^^am ^^^a ^^^bot. ^^^Question/problem? ^^^Ask ^^^/u/will_work_for_twerk*
-                    
-
-*^^^Description/changelog: ^^^[GitHub](https://github.com/seru1us/DotaResponsesRedditBot) ^^^| [^^^Responses ^^^source](https://gwent.gamepedia.com/Category:Audio)*
+*^^^I ^^^am ^^^a ^^^bot. ^^^Question/problem? ^^^Ask ^^^/u/will_work_for_twerk* ^^^| ^^^[GitHub](https://github.com/seru1us/DotaResponsesRedditBot) ^^^| [^^^Responses ^^^source](https://gwent.gamepedia.com/Category:Audio)*
 """
 
 INFO_FILENAME = 'infolog.log'
